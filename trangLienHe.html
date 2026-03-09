@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Liên hệ</title>
+    <!-- Font Awesome cho icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link rel="stylesheet" href="trangLienHe.css" />
+</head>
+<body>
+    <!-- MENU  -->
+    <nav>
+        <div class="nav-container">
+            <div class="nav-content">
+                <div class="logo">
+                    <i class="fa-solid fa-check" style="color: #4f46e5"></i>
+                    <span>ToDo List</span>
+                </div>
+                <div class="menu">
+                    <a href="trangDau.html" class="inactive">
+                        <i class="fa-solid fa-house"></i>Ứng dụng
+                    </a>
+                    <a href="trangHuongDan.html" class="inactive">
+                        <i class="fa-solid fa-book"></i>Hướng dẫn
+                    </a>
+                    <a href="trangGioiThieu.html" class="inactive">
+                        <i class="fa-solid fa-info-circle"></i>Giới thiệu
+                    </a>
+                    <a href="trangLienHe.html" class="active">
+                        <i class="fa-solid fa-envelope"></i>Liên hệ
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- NỘI DUNG -->
+    <main>
+        <div class="contact-container">
+            <h2><i class="fa-regular fa-envelope"></i> Liên hệ với chúng tôi</h2>
+            <p class="subtitle">Bạn có câu hỏi hoặc góp ý? Hãy gửi cho chúng tôi!</p>
+
+            <!-- Form  -->
+            <form id="contactForm" class="form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label><i class="fa-regular fa-user"></i> Họ tên</label>
+                        <input type="text" id="name" required placeholder="Nhập họ tên" />
+                    </div>
+                    <div class="form-group">
+                        <label><i class="fa-regular fa-envelope"></i> Email</label>
+                        <input type="email" id="email" required placeholder="Nhập email" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fa-regular fa-pen-to-square"></i> Tiêu đề</label>
+                    <input type="text" id="subject" required placeholder="Nhập tiêu đề" />
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fa-regular fa-message"></i> Nội dung</label>
+                    <textarea id="message" required placeholder="Nhập nội dung..."></textarea>
+                </div>
+
+                <button type="submit" id="submitBtn" class="submit-btn">
+                    <i class="fa-regular fa-paper-plane"></i> Gửi phản hồi
+                </button>
+            </form>
+
+            <!-- Thông báo kết quả -->
+            <div id="resultMessage" class="message"></div>
+        </div>
+    </main>
+    <!-- ========== JS ========== -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Lấy các phần tử từ HTML
+            const formLienHe = document.getElementById("contactForm");
+            const ketQuaDiv = document.getElementById("resultMessage");
+
+            // Xử lý khi gửi form
+            formLienHe.addEventListener("submit", function (e) {
+                e.preventDefault(); // Ngăn load lại trang
+
+                // Lấy giá trị từ form
+                const ten = document.getElementById("name").value;
+                const email = document.getElementById("email").value;
+
+                // Tạo nội dung thông báo
+                ketQuaDiv.innerHTML = `
+                    <i class="fa-solid fa-circle-check"></i> 
+                    <strong>Cảm ơn ${ten}!</strong><br>
+                    Phản hồi của bạn đã được gửi thành công.<br>
+                    Chúng tôi sẽ phản hồi qua email <strong>${email}</strong> sớm nhất.`;
+                
+                // Thêm class để hiển thị
+                ketQuaDiv.classList.add("show");
+                ketQuaDiv.classList.add("success");
+                ketQuaDiv.classList.remove("hidden");
+
+                // Xóa dữ liệu trong form
+                this.reset();
+
+                // Ẩn thông báo sau 5 giây
+                setTimeout(() => {
+                    ketQuaDiv.classList.remove("show");
+                    ketQuaDiv.classList.remove("success");
+                    ketQuaDiv.classList.add("hidden");
+                    ketQuaDiv.innerHTML = "";
+                }, 5000);
+            });
+        });
+    </script>
+</body>
+</html>

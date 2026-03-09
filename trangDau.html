@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ToDo List</title>
+    <!-- Font Awesome icon -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <link rel="stylesheet" type="text/css" href="trangDau.css" />
+  </head>
+  <body>
+    <!-- MENU  -->
+    <nav>
+      <div class="nav-container">
+        <div class="nav-content">
+          <div class="logo">
+            <i class="fa-solid fa-check" style="color: #4f46e5"></i>
+            <span>ToDo List</span>
+          </div>
+          <div class="menu">
+            <a href="trangDau.html" class="active">
+              <i class="fa-solid fa-house"></i> Ứng dụng
+            </a>
+            <a href="trangHuongDan.html" class="inactive">
+              <i class="fa-solid fa-book"></i> Hướng dẫn
+            </a>
+            <a href="trangGioiThieu.html" class="inactive">
+              <i class="fa-solid fa-info-circle"></i> Giới thiệu
+            </a>
+            <a href="trangLienHe.html" class="inactive">
+              <i class="fa-solid fa-envelope"></i> Liên hệ
+            </a>
+          </div>
+        </div>
+      </div>
+    </nav>
+
+    <!-- NỘI DUNG -->
+    <main>
+      <div class="todo-container">
+        <h2>
+          <i class="fa-solid fa-list-check" style="color: #4f46e5"></i>
+          Danh sách công việc
+        </h2>
+
+        <!-- Thêm công việc -->
+        <form id="todo-form" class="todo-form">
+          <div class="input-wrapper">
+            <i class="fa-solid fa-pen"></i>
+            <input
+              type="text"
+              id="todo-input"
+              class="todo-input"
+              placeholder="Hôm nay bạn cần làm gì?"
+              autocomplete="off"
+            />
+          </div>
+
+          <button type="submit" id="submit-btn" class="btn-primary">
+            <i class="fa-solid fa-plus"></i> <span>Thêm</span>
+          </button>
+
+          <button type="button" id="cancel-btn" class="btn-cancel hidden">
+            Hủy
+          </button>
+        </form>
+
+        <!-- Bộ lọc -->
+        <div class="filter-section">
+          <div class="pending-text">
+            Bạn có <span id="count-pending" class="pending-number">0</span> công
+            việc cần làm
+          </div>
+          <div class="filter-buttons" id="filter-container">
+            <button data-filter="all" class="filter-btn active">Tất cả</button>
+            <button data-filter="active" class="filter-btn inactive">
+              Chưa xong
+            </button>
+            <button data-filter="completed" class="filter-btn inactive">
+              Đã xong
+            </button>
+          </div>
+        </div>
+
+        <!-- Danh sách công việc -->
+        <ul id="todo-list" class="todo-list">
+        </ul>
+        
+        <div id="empty-state" class="empty-state">
+          <i
+            class="fa-regular fa-calendar-check"
+            style="font-size: 40px; opacity: 0.5">
+          </i>
+          <p class="text-sm mt-2">Hãy thêm công việc của bạn!</p>
+        </div>
+      </div>
+    </main>
+    <!--JS-->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        // HÀM LẤY NGÀY GIỜ
+        function layNgayGioHienTai() {
+          const hienTai = new Date();
+          const ngay = String(hienTai.getDate()).padStart(2, "0");
+          const thang = String(hienTai.getMonth() + 1).padStart(2, "0");
+          const nam = hienTai.getFullYear();
+          const gio = String(hienTai.getHours()).padStart(2, "0");
+          const phut = String(hienTai.getMinutes()).padStart(2, "0");
+
+          return {
+            ngay: `${ngay}/${thang}/${nam}`,
+            gio: `${gio}:${phut}`,
+            dayDu: `${ngay}/${thang}/${nam} ${gio}:${phut}`,
+          };
+        }
+
+        // BIẾN CHÍNH
+        let danhSachCongViec = JSON.parse(localStorage.getItem("todos")) || [];
+
+        // Chuyển đổi dữ liệu cũ
+        danhSachCongViec = danhSachCongViec.map((congViec) => {
+          if (!congViec.ngayTao) {
+            congViec.ngayTao = layNgayGioHienTai().dayDu;
+          }
+          return congViec;
+        });
+
+        let boLocHienTai = "all"; // 'all', 'active', 'completed'
+        let dangSuaId = null; // ID công việc đang sửa
+
+        //LẤY CÁC ELEMENT TỪ HTML
+        const formThem = document.getElementById("todo-form");
+        const oNhap = document.getElementById("todo-input");
+        const danhSachUl = document.getElementById("todo-list");
+        const demChuaXong = document.getElementById("count-pending");
+        const thongBaoTrong = document.getElementById("empty-state");
+        const nutSubmit = document.getElementById("submit-btn");
+        const nutHuy = document.getElementById("cancel-btn");
+        const cacNutLoc = document.querySelectorAll(".filter-btn");
+
+        //XỬ LÝ NÚT LỌC
+        cacNutLoc.forEach((button) => {
+          button.addEventListener("click", function () {
+            cacNutLoc.forEach((btn) => {
+              btn.classList.remove("active");
+              btn.classList.add("inactive");
+            });
+
+            this.classList.remove("inactive");
+            this.classList.add("active");
+
+            boLocHienTai = this.getAttribute("data-filter");
+            hienThiDanhSach();
+          });
+        });
+
+        //XỬ LÝ THÊM CÔNG VIỆC
+        formThem.addEventListener("submit", function (e) {
+          e.preventDefault();
+
+          const noiDung = oNhap.value.trim();
+          if (!noiDung) return;
+
+          if (dangSuaId) {
+            // CHẾ ĐỘ SỬA
+            danhSachCongViec = danhSachCongViec.map((congViec) =>
+              congViec.id === dangSuaId ? { ...congViec, noiDung } : congViec,
+            );
+            dangSuaId = null;
+            nutSubmit.innerHTML =
+              '<i class="fa-solid fa-plus"></i> <span>Thêm</span>';
+            nutHuy.classList.add("hidden");
+          } else {
+            // CHẾ ĐỘ THÊM MỚI
+            const congViecMoi = {
+              id: Date.now(),
+              noiDung: noiDung,
+              daHoanThanh: false,
+              ngayTao: layNgayGioHienTai().dayDu,
+            };
+            danhSachCongViec.unshift(congViecMoi);
+          }
+
+          oNhap.value = "";
+          luuVaoLocalStorage();
+          hienThiDanhSach();
+        });
+
+        //  HỦY CHẾ ĐỘ SỬA
+        nutHuy.addEventListener("click", function () {
+          dangSuaId = null;
+          oNhap.value = "";
+          nutSubmit.innerHTML =
+            '<i class="fa-solid fa-plus"></i> <span>Thêm</span>';
+          nutHuy.classList.add("hidden");
+        });
+
+        //  HÀM HIỂN THỊ DANH SÁCH 
+        function hienThiDanhSach() {
+          // Lọc công việc theo bộ lọc hiện tại
+          const danhSachDaLoc = danhSachCongViec.filter((congViec) => {
+            if (boLocHienTai === "active") return !congViec.daHoanThanh;
+            if (boLocHienTai === "completed") return congViec.daHoanThanh;
+            return true; // 'all'
+          });
+
+          // Đếm số công việc chưa hoàn thành
+          const soLuongChuaXong = danhSachCongViec.filter(
+            (congViec) => !congViec.daHoanThanh,
+          ).length;
+          demChuaXong.textContent = soLuongChuaXong;
+
+          // Nếu không có công việc nào
+          if (danhSachDaLoc.length === 0) {
+            thongBaoTrong.classList.remove("hidden");
+            danhSachUl.innerHTML = "";
+          } else {
+            thongBaoTrong.classList.add("hidden");
+
+            // Tạo HTML cho từng công việc
+            danhSachUl.innerHTML = danhSachDaLoc
+              .map(
+                (congViec) => `
+                  <li class="todo-item ${congViec.daHoanThanh ? "completed" : ""}" data-id="${congViec.id}">
+                    <!-- Nút toggle -->
+                    <div class="todo-checkbox ${congViec.daHoanThanh ? "checked" : ""}">
+                      ${congViec.daHoanThanh ? '<i class="fa-solid fa-check text-xs"></i>' : ""}
+                    </div>
+                    
+                    <!-- Nội dung + Ngày giờ -->
+                    <div class="todo-content">
+                      <div class="todo-text ${congViec.daHoanThanh ? "completed" : ""}">
+                        ${congViec.noiDung}
+                      </div>
+                      <div class="todo-meta">
+                        <i class="fa-regular fa-clock"></i> 
+                        Tạo lúc: ${congViec.ngayTao || "Không rõ"}
+                      </div>
+                    </div>
+                    
+                    <!-- Nút chức năng -->
+                    <div class="todo-actions">
+                      <button class="todo-btn sua-btn">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                      </button>
+                      <button class="todo-btn xoa-btn">
+                        <i class="fa-solid fa-trash-can"></i>
+                      </button>
+                    </div>
+                  </li>
+                `,
+              )
+              .join("");
+
+            // Gắn sự kiện
+            ganSuKienChoNut();
+          }
+        }
+
+        //  GẮN SỰ KIỆN CHO CÁC NÚT  
+        function ganSuKienChoNut() {
+          // Nút đánh dấu hoàn thành
+          document.querySelectorAll(".todo-checkbox").forEach((nut) => {
+            nut.addEventListener("click", function () {
+              const id = parseInt(
+                this.closest(".todo-item").getAttribute("data-id"),
+              );
+              chuyenTrangThai(id);
+            });
+          });
+
+          // Nút sửa
+          document.querySelectorAll(".sua-btn").forEach((nut) => {
+            nut.addEventListener("click", function () {
+              const id = parseInt(
+                this.closest(".todo-item").getAttribute("data-id"),
+              );
+              suaCongViec(id);
+            });
+          });
+
+          // Nút xóa
+          document.querySelectorAll(".xoa-btn").forEach((nut) => {
+            nut.addEventListener("click", function () {
+              const id = parseInt(
+                this.closest(".todo-item").getAttribute("data-id"),
+              );
+              if (confirm("Bạn có chắc muốn xóa công việc này?")) {
+                xoaCongViec(id);
+              }
+            });
+          });
+        }
+
+        // CÁC HÀM XỬ LÝ  
+        function chuyenTrangThai(id) {
+          danhSachCongViec = danhSachCongViec.map((congViec) =>
+            congViec.id === id
+              ? { ...congViec, daHoanThanh: !congViec.daHoanThanh }
+              : congViec,
+          );
+          luuVaoLocalStorage();
+          hienThiDanhSach();
+        }
+
+        function suaCongViec(id) {
+          const congViec = danhSachCongViec.find((cv) => cv.id === id);
+          if (congViec) {
+            oNhap.value = congViec.noiDung;
+            oNhap.focus();
+            dangSuaId = id;
+            nutSubmit.innerHTML =
+              '<i class="fa-solid fa-check"></i> <span>Cập nhật</span>';
+            nutHuy.classList.remove("hidden");
+          }
+        }
+
+        function xoaCongViec(id) {
+          danhSachCongViec = danhSachCongViec.filter(
+            (congViec) => congViec.id !== id,
+          );
+          luuVaoLocalStorage();
+          hienThiDanhSach();
+        }
+
+        //  LƯU VÀO LOCALSTORAGE
+        function luuVaoLocalStorage() {
+          localStorage.setItem("todos", JSON.stringify(danhSachCongViec));
+        }
+
+        //  KHỞI ĐỘNG: Hiển thị danh sách lần đầu 
+        hienThiDanhSach();
+      });
+    </script>
+  </body>
+</html>
